@@ -1,4 +1,3 @@
-
 package com.Moses.Moses.POS.System.service.branchAnalytics;
 
 import com.Moses.Moses.POS.System.payload.dto.dailysalesDto.*;
@@ -6,6 +5,7 @@ import com.Moses.Moses.POS.System.repository.BranchAnalyticsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -29,11 +29,15 @@ public class BranchAnalyticsServiceImpl implements BranchAnalyticsService {
         return branchAnalyticsRepository
                 .findDailySales(branchId, start, end)
                 .stream()
-                .map(row -> new DailySalesDTO(
-                        toLocalDate(row[0]),
-                        toLong(row[1]),
-                        toDouble(row[2])
-                ))
+                .map(row -> {
+                    Double sales = toDouble(row[2]);
+                    return DailySalesDTO.builder()
+                            .date(toLocalDate(row[0]))
+                            .totalOrders(toLong(row[1]))
+                            .totalSales(sales)
+                            .revenue(toBigDecimal(row[2]))
+                            .build();
+                })
                 .toList();
     }
 
@@ -101,12 +105,12 @@ public class BranchAnalyticsServiceImpl implements BranchAnalyticsService {
         return branchAnalyticsRepository
                 .findCategorySales(branchId, start, end)
                 .stream()
-                .map(row -> new CategorySalesDTO(
-                        toLong(row[0]),
-                        (String) row[1],
-                        toLong(row[2]),
-                        toDouble(row[3])
-                ))
+                .map(row -> CategorySalesDTO.builder()
+                        .categoryId(toLong(row[0]))
+                        .categoryName((String) row[1])
+                        .quantitySold(toLong(row[2]))
+                        .totalSales(toBigDecimal(row[3]))
+                        .build())
                 .toList();
     }
 
@@ -156,11 +160,11 @@ public class BranchAnalyticsServiceImpl implements BranchAnalyticsService {
         return branchAnalyticsRepository
                 .findPaymentBreakdown(branchId, start, end)
                 .stream()
-                .map(row -> new PaymentBreakdownDTO(
-                        row[0] == null ? "UNKNOWN" : row[0].toString(),
-                        toLong(row[1]),
-                        toDouble(row[2])
-                ))
+                .map(row -> PaymentBreakdownDTO.builder()
+                        .paymentMethod(row[0] == null ? "UNKNOWN" : row[0].toString())
+                        .totalTransactions(toLong(row[1]))
+                        .totalAmount(toBigDecimal(row[2]))
+                        .build())
                 .toList();
     }
 
@@ -185,5 +189,12 @@ public class BranchAnalyticsServiceImpl implements BranchAnalyticsService {
 
     private Double toDouble(Object value) {
         return value == null ? 0.0 : ((Number) value).doubleValue();
+    }
+
+    private BigDecimal toBigDecimal(Object value) {
+        if (value == null) return BigDecimal.ZERO;
+        if (value instanceof BigDecimal bd) return bd;
+        if (value instanceof Number num) return BigDecimal.valueOf(num.doubleValue());
+        return BigDecimal.ZERO;
     }
 }

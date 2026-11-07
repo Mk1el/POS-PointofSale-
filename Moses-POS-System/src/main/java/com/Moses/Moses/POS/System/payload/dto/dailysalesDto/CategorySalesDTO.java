@@ -1,15 +1,19 @@
 package com.Moses.Moses.POS.System.payload.dto.dailysalesDto;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Data
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class CategorySalesDTO {
     private Long categoryId;
     private String categoryName;
     private Long quantitySold;
-    private Double totalSales;
+    private BigDecimal totalSales;
 }
