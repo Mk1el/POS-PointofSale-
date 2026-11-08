@@ -28,6 +28,7 @@ public class User {
     @ManyToOne
     private Branch branch;
     private String phone;
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserRole role;
     @Column(nullable = false)

@@ -1,8 +1,10 @@
+
 package com.Moses.Moses.POS.System.configuration;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -12,7 +14,6 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 
-import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -23,41 +24,56 @@ public class SecurityConfig {
 
         return http
 
-                .csrf(csrf -> csrf.disable())
-
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
-
+                // Enable CORS
                 .cors(cors ->
                         cors.configurationSource(corsConfigurationSource())
                 )
 
+                // Disable CSRF for JWT-based authentication
+                .csrf(csrf -> csrf.disable())
+
+                // Stateless authentication
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
+                // Endpoint authorization
                 .authorizeHttpRequests(auth -> auth
 
+                        // Allow browser preflight requests
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // Public endpoints
                         .requestMatchers(
                                 "/auth/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
 
+                        // Super Admin endpoints
                         .requestMatchers("/api/super-admin/**")
                         .hasRole("ADMIN")
 
+                        // All other API endpoints require authentication
                         .requestMatchers("/api/**")
                         .authenticated()
 
+                        // Other non-API endpoints
                         .anyRequest()
                         .permitAll()
                 )
 
-                .addFilterBefore(new JwtValidator(),
-                        BasicAuthenticationFilter.class)
+                // JWT validation filter
+                .addFilterBefore(
+                        new JwtValidator(),
+                        BasicAuthenticationFilter.class
+                )
 
                 .build();
     }
+
     @Bean
-    public PasswordEncoder passwordEncoder(){
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
@@ -71,20 +87,29 @@ public class SecurityConfig {
 
                 CorsConfiguration config = new CorsConfiguration();
 
-                config.setAllowedOrigins(List.of("*"));
+                // React Vite frontend
+                config.setAllowedOrigins(List.of(
+                        "http://localhost:5173",
+                        "http://localhost:3000"
+                ));
 
+                // Allowed HTTP methods
                 config.setAllowedMethods(List.of(
                         "GET",
                         "POST",
                         "PUT",
+                        "PATCH",
                         "DELETE",
                         "OPTIONS"
                 ));
 
+                // Allow Authorization and Content-Type headers
                 config.setAllowedHeaders(List.of("*"));
 
+                // Allow credentials
                 config.setAllowCredentials(true);
-                config.setAllowedHeaders(Arrays.asList("Authorization"));
+
+                // Cache preflight response
                 config.setMaxAge(3600L);
 
                 return config;
